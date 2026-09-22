@@ -13,6 +13,7 @@ import { postJson } from "@/lib/api-client";
 import { clearPendingUploads, clearSession, loadPendingUploads, loadSession, saveSession } from "@/lib/session-storage";
 import { createInitialSession, workspaceReducer } from "@/lib/state";
 import { buildJsonExport, buildMarkdownExport } from "@/lib/export-result";
+import { formatFileSize, MAX_FILE_SIZE_BYTES } from "@/lib/limits";
 
 type AnalysisStatus = "idle" | "analyzing" | "done";
 type SectionKey = "reading" | "analysis" | "results" | "axial" | "selective";
@@ -441,7 +442,7 @@ export function WorkspaceShell() {
             <div className="reading-empty">
               <div className="empty-index">A</div>
               <p>文件读取结果会显示在这里</p>
-              <span>支持 .docx 与文字型 .pdf，单个文件最大 10 MB</span>
+              <span>支持 .docx 与文字型 .pdf，单个文件最大 {formatFileSize(MAX_FILE_SIZE_BYTES)}</span>
             </div>
           ) : !state.textLocked ? (
             <>

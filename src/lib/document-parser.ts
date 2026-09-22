@@ -4,7 +4,7 @@ import mammoth from "mammoth";
 // fixture when loaded by some CommonJS test runners.
 import pdfParse from "pdf-parse/lib/pdf-parse.js";
 import type { FileType, ParseWarning, SourceDocument } from "@/lib/domain-types";
-import { MAX_FILE_SIZE_BYTES, MAX_TEXT_LENGTH } from "@/lib/limits";
+import { formatFileSize, MAX_FILE_SIZE_BYTES, MAX_TEXT_LENGTH } from "@/lib/limits";
 
 const DOCX_MIME_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -67,7 +67,7 @@ export function validateFileMetadata(file: Pick<UploadedFileLike, "name" | "type
   }
 
   if (file.size > MAX_FILE_SIZE_BYTES) {
-    throw new DocumentParseError("FILE_TOO_LARGE", "文件超过 10 MB 大小限制。", 413);
+    throw new DocumentParseError("FILE_TOO_LARGE", `文件超过 ${formatFileSize(MAX_FILE_SIZE_BYTES)} 大小限制。`, 413);
   }
 
   const mimeType = file.type.trim().toLowerCase();
@@ -131,7 +131,7 @@ export async function parseUploadedFile(file: UploadedFileLike): Promise<Documen
   }
 
   if (buffer.length > MAX_FILE_SIZE_BYTES) {
-    throw new DocumentParseError("FILE_TOO_LARGE", "文件超过 10 MB 大小限制。", 413);
+    throw new DocumentParseError("FILE_TOO_LARGE", `文件超过 ${formatFileSize(MAX_FILE_SIZE_BYTES)} 大小限制。`, 413);
   }
 
   let extractedText = "";

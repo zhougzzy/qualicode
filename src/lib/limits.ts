@@ -1,4 +1,5 @@
-export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+// Keep the upload cap below common serverless request-body limits.
+export const MAX_FILE_SIZE_BYTES = 4 * 1024 * 1024;
 export const MAX_TEXT_LENGTH = 50_000;
 export const SUPPORTED_EXTENSIONS = [".docx", ".pdf"] as const;
 

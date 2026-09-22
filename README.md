@@ -65,6 +65,18 @@ QUALICODE_ACCESS_CODE=optional-shared-code
 
 未配置 `DEEPSEEK_API_KEY` 时，仍可以体验文件读取、文本核对和结果导出流程，但 AI 分析功能不可用。
 
+## 部署到 Vercel
+
+本项目使用 Next.js 服务端 API，不能部署为纯静态网页。将项目导入 Vercel 后，在项目设置的 Environment Variables 中配置：
+
+```text
+DEEPSEEK_API_KEY=你的 DeepSeek API Key
+DEEPSEEK_MODEL=deepseek-chat
+QUALICODE_ACCESS_CODE=你的共享访问码
+```
+
+不要使用 `NEXT_PUBLIC_` 前缀保存 `DEEPSEEK_API_KEY`。部署后建议先用脱敏材料验证文件上传、开放编码、轴心编码、选择性编码和导出流程。当前单文件上传上限为 4 MB，以适配无服务器函数的请求大小限制。
+
 ## 隐私与研究边界
 
 - 请只上传已经脱敏的访谈材料，不要上传真实姓名、联系方式、身份证件、病历或其他可识别个人身份的信息。

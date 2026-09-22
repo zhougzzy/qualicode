@@ -1,6 +1,8 @@
 node_modules/
 .npm-cache/
 .next/
+.next-dev/
+.next-broken-*/
 out/
 coverage/
 *.tsbuildinfo

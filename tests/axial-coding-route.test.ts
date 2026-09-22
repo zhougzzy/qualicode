@@ -62,6 +62,31 @@ describe("POST /api/analyze/axial", () => {
     expect(body.data.evidence.length).toBeGreaterThanOrEqual(2);
   });
 
+  it("resolves category references returned as labels or quotes and groups every code", async () => {
+    process.env.DEEPSEEK_API_KEY = "test-key";
+    const text = "受访者感到工作压力。后来她把事情列出来。";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({
+      categories: [
+        { role: "phenomenon", name: "压力体验", description: "感受到负担。", codeIds: ["工作压力"], evidenceQuotes: ["工作压力"] },
+        { role: "strategy", name: "任务整理", description: "通过列出事项应对。", codeIds: ["把事情列出来"], evidenceQuotes: ["把事情列出来"] },
+      ],
+      relations: [],
+      counterEvidence: [],
+      reviewQuestions: [],
+    }) } }], usage: { total_tokens: 20 } }), { status: 200, headers: { "Content-Type": "application/json" } })));
+
+    const response = await POST(requestFor(text, [
+      code("open-1", "工作压力", 6),
+      code("open-2", "把事情列出来", 13),
+    ]));
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body.data.analysis.categories.map((category: { codeIds: string[] }) => category.codeIds)).toEqual([
+      ["open-1"],
+      ["open-2"],
+    ]);
+  });
+
   it("rejects suggested codes as unconfirmed input", async () => {
     process.env.DEEPSEEK_API_KEY = "test-key";
     const text = "原文片段。";

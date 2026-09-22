@@ -41,6 +41,8 @@ export function createAxialCodingPrompt(text: string, codes: CodeLabel[], resear
     "请基于已确认的开放编码完成扎根理论轴心编码。",
     "只输出 JSON，不要输出 Markdown、前言或未经证据支持的结论。",
     "轴心编码只能组织现有开放编码，不能修改访谈原文，也不能凭空创造开放编码 ID。",
+    "每一条已确认开放编码都必须归入一个且仅一个类别；不要留下未归类编码，也不要创建没有开放编码的空类别。",
+    "codeIds 必须逐字复制输入中对应开放编码的 id；如果无法记住 id，也可在 codeIds 中填写对应的开放编码标签或原文片段，服务端会尝试还原对应编码。",
     "将类别标记为 phenomenon、condition、context、strategy、consequence 或 interaction。",
     "关系只写成研究假设，不要表述为已验证的因果关系。relation 使用 condition、process、strategy、consequence 或 association。",
     "每个类别和关系尽量引用输入文本中的连续原文片段；无法逐字定位的内容仍可提出，但必须由服务端标记为待人工核对。",

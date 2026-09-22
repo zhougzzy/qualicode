@@ -38,6 +38,64 @@ const requestSchema = z.object({
 export const runtime = "nodejs";
 const DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
 
+function normalizeCodeReference(value: string): string {
+  return value
+    .trim()
+    .toLocaleLowerCase()
+    .replace(/[\s\u3000]+/g, "")
+    .replace(/[“”‘’"'`，。！？、；：,.!?;:()[\]{}]/g, "");
+}
+
+function spansOverlap(left: { start: number; end: number }, right: { start: number; end: number }): boolean {
+  return left.start < right.end && right.start < left.end;
+}
+
+function resolveCodeReferences(
+  text: string,
+  references: string[],
+  codes: AxialCodingRequest["confirmedOpenCodes"],
+): string[] {
+  const aliasToId = new Map<string, string>();
+  const codeById = new Map(codes.map((code) => [code.id, code]));
+  const addAlias = (alias: string, id: string) => {
+    const normalized = normalizeCodeReference(alias);
+    if (normalized && !aliasToId.has(normalized)) aliasToId.set(normalized, id);
+  };
+
+  codes.forEach((code, index) => {
+    addAlias(code.id, code.id);
+    addAlias(code.name, code.id);
+    addAlias(code.sourceQuote, code.id);
+    if (code.editedQuote) addAlias(code.editedQuote, code.id);
+    addAlias(String(index + 1), code.id);
+    addAlias(`open-${index + 1}`, code.id);
+    addAlias(`code-${index + 1}`, code.id);
+    addAlias(`开放编码${index + 1}`, code.id);
+    addAlias(`开放编码-${index + 1}`, code.id);
+  });
+
+  const resolved = new Set<string>();
+  for (const reference of references) {
+    const directId = aliasToId.get(normalizeCodeReference(reference));
+    if (directId) {
+      resolved.add(directId);
+      continue;
+    }
+
+    const referenceSpan = locateQuote(text, reference);
+    for (const code of codes) {
+      const aliases = [code.name, code.sourceQuote, code.editedQuote].filter(Boolean) as string[];
+      const textMatches = aliases.some((alias) => reference.includes(alias) || alias.includes(reference));
+      const spanMatches = referenceSpan
+        ? code.spans.some((span) => spansOverlap(span, referenceSpan))
+        : false;
+      if (textMatches || spanMatches) resolved.add(code.id);
+    }
+  }
+
+  return Array.from(resolved).filter((id) => codeById.has(id));
+}
+
 function validateConfirmedOpenCodes(text: string, codes: AxialCodingRequest["confirmedOpenCodes"]): string | null {
   const ids = new Set<string>();
   for (const code of codes) {
@@ -139,11 +197,35 @@ export async function POST(request: Request) {
       return [item.id];
     });
 
+    const assignedCodeIds = new Set<string>();
     const categories = modelResult.data.categories.map((category, index) => {
-      const validCodeIds = category.codeIds.filter((id) => codeIds.has(id));
+      const resolvedCodeIds = resolveCodeReferences(
+        payload.text,
+        [...category.codeIds, ...category.evidenceQuotes, category.name],
+        payload.confirmedOpenCodes,
+      );
+      const validCodeIds = resolvedCodeIds.filter((id) => {
+        if (!codeIds.has(id) || assignedCodeIds.has(id)) return false;
+        assignedCodeIds.add(id);
+        return true;
+      });
       const evidenceIds = evidenceForQuotes(category.evidenceQuotes, "category-" + (index + 1), "轴心类别支持证据");
       return createAxialCategory({ ...category, codeIds: validCodeIds, evidenceIds }, index);
     });
+
+    const unassignedCodeIds = payload.confirmedOpenCodes
+      .map((code) => code.id)
+      .filter((id) => !assignedCodeIds.has(id));
+    if (unassignedCodeIds.length > 0) {
+      categories.push(createAxialCategory({
+        role: "context",
+        name: "待人工归类",
+        description: "这些开放编码没有被模型稳定归入已有类别，请研究者结合原文比较后归入合适类别。",
+        codeIds: unassignedCodeIds,
+        evidenceIds: [],
+      }, categories.length));
+      unassignedCodeIds.forEach((id) => assignedCodeIds.add(id));
+    }
     const relations = modelResult.data.relations.map((relation, index) => {
       const evidenceIds = evidenceForQuotes(relation.evidenceQuotes, "relation-" + (index + 1), "轴心关系支持证据");
       return createRelation({

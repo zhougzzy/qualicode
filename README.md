@@ -1,5 +1,7 @@
 # QualiCode
 
+在线体验：[qualicode-production.up.railway.app](https://qualicode-production.up.railway.app/)
+
 QualiCode 是一个面向心理学访谈研究的 AI 辅助质性编码工具。
 
 它帮助研究者把访谈文件转换为可核对的文本，在保留原文证据的基础上，逐步完成开放编码、轴心编码和选择性编码。AI 只提供研究辅助建议，最终判断仍由研究者完成。
